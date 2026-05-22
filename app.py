@@ -6,18 +6,18 @@ from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 
-# =========================
-# CONFIG PAGE
-# =========================
+# ==================================================
+# CONFIGURAÇÃO DA PÁGINA
+# ==================================================
 st.set_page_config(
     page_title="Projeto Desencalha",
     page_icon="💘",
     layout="centered"
 )
 
-# =========================
+# ==================================================
 # GOOGLE SHEETS
-# =========================
+# ==================================================
 scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -30,97 +30,98 @@ creds = Credentials.from_service_account_info(
 
 client = gspread.authorize(creds)
 
-# NOME DA PLANILHA
 sheet = client.open("Projeto Desencalha - Ranking").sheet1
 
-# =========================
+# ==================================================
 # CSS
-# =========================
+# ==================================================
 st.markdown("""
 <style>
-    .main {
-        background: radial-gradient(circle at top, #3b0764, #111827 55%, #020617);
-    }
 
-    .block-container {
-        max-width: 700px;
-        padding-top: 3rem;
-    }
+.main {
+    background: radial-gradient(circle at top, #3b0764, #111827 55%, #020617);
+}
 
-    .card {
-        background: rgba(15, 23, 42, 0.92);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 24px;
-        padding: 30px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-        text-align: center;
-    }
+.block-container {
+    max-width: 720px;
+    padding-top: 3rem;
+}
 
-    .badge {
-        display: inline-block;
-        background: rgba(236,72,153,0.15);
-        color: #f9a8d4;
-        border: 1px solid rgba(236,72,153,0.35);
-        padding: 8px 14px;
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 18px;
-    }
+.card {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    text-align: center;
+}
 
-    .title {
-        font-size: 42px;
-        font-weight: 900;
-        color: white;
-        margin-bottom: 10px;
-    }
+.badge {
+    display: inline-block;
+    background: rgba(236,72,153,0.15);
+    color: #f9a8d4;
+    border: 1px solid rgba(236,72,153,0.35);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
 
-    .subtitle {
-        color: #cbd5e1;
-        line-height: 1.6;
-        font-size: 17px;
-        margin-bottom: 18px;
-    }
+.title {
+    font-size: 42px;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 10px;
+}
 
-    .success-title {
-        color: #86efac;
-        font-size: 36px;
-        font-weight: 900;
-    }
+.subtitle {
+    color: #cbd5e1;
+    line-height: 1.6;
+    font-size: 17px;
+    margin-bottom: 18px;
+}
 
-    .error-title {
-        color: #fca5a5;
-        font-size: 36px;
-        font-weight: 900;
-    }
+.success-title {
+    color: #86efac;
+    font-size: 36px;
+    font-weight: 900;
+}
 
-    .mini-card {
-        background: rgba(255,255,255,0.08);
-        border-radius: 18px;
-        padding: 18px;
-        margin: 14px 0;
-        text-align: left;
-        color: #e5e7eb;
-    }
+.error-title {
+    color: #fca5a5;
+    font-size: 36px;
+    font-weight: 900;
+}
 
-    .mini-card h3 {
-        color: #facc15;
-        margin-bottom: 8px;
-    }
+.mini-card {
+    background: rgba(255,255,255,0.08);
+    border-radius: 18px;
+    padding: 18px;
+    margin: 14px 0;
+    text-align: left;
+    color: #e5e7eb;
+}
 
-    div.stButton > button {
-        width: 100%;
-        border-radius: 14px;
-        padding: 0.7rem 1rem;
-        font-weight: 700;
-        border: none;
-    }
+.mini-card h3 {
+    color: #facc15;
+    margin-bottom: 8px;
+}
+
+div.stButton > button {
+    width: 100%;
+    border-radius: 14px;
+    padding: 0.7rem 1rem;
+    font-weight: 700;
+    border: none;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# =========================
-# SESSION
-# =========================
+# ==================================================
+# SESSION STATE
+# ==================================================
 if "etapa" not in st.session_state:
     st.session_state.etapa = "inicio"
 
@@ -130,37 +131,52 @@ if "motivo" not in st.session_state:
 if "idade" not in st.session_state:
     st.session_state.idade = 0
 
-# =========================
+if "score" not in st.session_state:
+    st.session_state.score = 0
+
+# ==================================================
 # FUNÇÕES
-# =========================
+# ==================================================
 def resetar():
     st.session_state.etapa = "inicio"
     st.session_state.motivo = ""
     st.session_state.idade = 0
+    st.session_state.score = 0
 
 def loading(destino):
-    with st.container():
-        st.markdown("""
+
+    st.markdown(
+        """
         <div class="card">
-            <div class="badge">ANÁLISE EM ANDAMENTO</div>
-            <div class="title">Analisando candidato...</div>
+            <div class="badge">
+                ANÁLISE EM ANDAMENTO
+            </div>
+
+            <div class="title">
+                Analisando candidato...
+            </div>
+
             <div class="subtitle">
-                Consultando histórico emocional, risco de sumiço
-                e capacidade de assumir relacionamento sério.
+                Consultando histórico emocional,
+                risco de sumiço e capacidade de
+                assumir relacionamento sério.
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
-        progress = st.progress(0)
+    progress = st.progress(0)
 
-        for i in range(100):
-            time.sleep(0.01)
-            progress.progress(i + 1)
+    for i in range(100):
+        time.sleep(0.01)
+        progress.progress(i + 1)
 
     st.session_state.etapa = destino
     st.rerun()
 
 def salvar_candidato(nome, idade, instagram, score):
+
     sheet.append_row([
         datetime.now().strftime("%d/%m/%Y %H:%M"),
         nome,
@@ -171,6 +187,7 @@ def salvar_candidato(nome, idade, instagram, score):
     ])
 
 def buscar_ranking():
+
     dados = sheet.get_all_records()
 
     ranking = sorted(
@@ -181,26 +198,33 @@ def buscar_ranking():
 
     return ranking[:10]
 
-# =========================
-# INÍCIO
-# =========================
+# ==================================================
+# TELA INICIAL
+# ==================================================
 if st.session_state.etapa == "inicio":
 
-    st.markdown("""
-    <div class="card">
-        <div class="badge">PROCESSO SELETIVO AFETIVO 2026</div>
+    st.markdown(
+        """
+        <div class="card">
 
-        <div class="title">
-            Projeto Desencalha
-        </div>
+            <div class="badge">
+                PROCESSO SELETIVO AFETIVO 2026
+            </div>
 
-        <div class="subtitle">
-            Bem-vindo ao processo oficial de triagem amorosa.<br>
-            Responda com sinceridade.<br>
-            Mentiras emocionais serão detectadas.
+            <div class="title">
+                Projeto Desencalha
+            </div>
+
+            <div class="subtitle">
+                Bem-vindo ao processo oficial de triagem amorosa.<br>
+                Responda com sinceridade.<br>
+                Mentiras emocionais serão detectadas.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
@@ -208,26 +232,33 @@ if st.session_state.etapa == "inicio":
         st.session_state.etapa = "solteiro"
         st.rerun()
 
-# =========================
+# ==================================================
 # PERGUNTA 1
-# =========================
+# ==================================================
 elif st.session_state.etapa == "solteiro":
 
     st.progress(33)
 
-    st.markdown("""
-    <div class="card">
-        <div class="badge">ETAPA 1 DE 3</div>
+    st.markdown(
+        """
+        <div class="card">
 
-        <div class="title">
-            Você é solteiro?
-        </div>
+            <div class="badge">
+                ETAPA 1 DE 3
+            </div>
 
-        <div class="subtitle">
-            Pergunta eliminatória.
+            <div class="title">
+                Você é solteiro?
+            </div>
+
+            <div class="subtitle">
+                Pergunta eliminatória.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
@@ -244,30 +275,38 @@ elif st.session_state.etapa == "solteiro":
                 "Infelizmente candidatos comprometidos "
                 "não podem prosseguir."
             )
+
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
-# =========================
+# ==================================================
 # PERGUNTA 2
-# =========================
+# ==================================================
 elif st.session_state.etapa == "idade":
 
     st.progress(66)
 
-    st.markdown("""
-    <div class="card">
-        <div class="badge">ETAPA 2 DE 3</div>
+    st.markdown(
+        """
+        <div class="card">
 
-        <div class="title">
-            Você tem quantos anos?
-        </div>
+            <div class="badge">
+                ETAPA 2 DE 3
+            </div>
 
-        <div class="subtitle">
-            Faixa aceita pela comissão:
-            entre 25 e 35 anos.
+            <div class="title">
+                Você tem quantos anos?
+            </div>
+
+            <div class="subtitle">
+                Faixa aceita pela comissão:
+                entre 25 e 35 anos.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     idade = st.number_input(
         "Digite sua idade",
@@ -279,48 +318,61 @@ elif st.session_state.etapa == "idade":
     if st.button("Próximo"):
 
         if idade < 25:
+
             st.session_state.motivo = (
                 "Infelizmente você não passou. "
                 "Candidato ainda está em fase "
                 "de desenvolvimento emocional."
             )
+
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
         elif idade > 35:
+
             st.session_state.motivo = (
                 "Vixi... perdeu a chance. "
                 "Volte no tempo e tente novamente."
             )
+
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
         else:
+
             st.session_state.idade = idade
             st.session_state.etapa = "preparado"
             st.rerun()
 
-# =========================
+# ==================================================
 # PERGUNTA 3
-# =========================
+# ==================================================
 elif st.session_state.etapa == "preparado":
 
     st.progress(100)
 
-    st.markdown("""
-    <div class="card">
-        <div class="badge">ETAPA 3 DE 3</div>
+    st.markdown(
+        """
+        <div class="card">
 
-        <div class="title">
-            Está 100% preparado?
-        </div>
+            <div class="badge">
+                ETAPA 3 DE 3
+            </div>
 
-        <div class="subtitle">
-            Essa etapa mede coragem,
-            maturidade e ausência de trauma não resolvido.
+            <div class="title">
+                Está 100% preparado?
+            </div>
+
+            <div class="subtitle">
+                Essa etapa mede coragem,
+                maturidade e ausência de trauma
+                não resolvido.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
@@ -333,40 +385,52 @@ elif st.session_state.etapa == "preparado":
 
     with col2:
         if st.button("Não sei se estou pronto"):
+
             st.session_state.motivo = (
                 "A candidata procura guerreiros "
                 "preparados psicologicamente."
             )
+
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
-# =========================
-# LOADING
-# =========================
+# ==================================================
+# LOADING REPROVADO
+# ==================================================
 elif st.session_state.etapa == "loading_reprovado":
     loading("reprovado")
 
+# ==================================================
+# LOADING APROVADO
+# ==================================================
 elif st.session_state.etapa == "loading_aprovado":
     loading("formulario")
 
-# =========================
+# ==================================================
 # REPROVADO
-# =========================
+# ==================================================
 elif st.session_state.etapa == "reprovado":
 
-    st.markdown(f"""
-    <div class="card">
-        <div style="font-size:58px;">❌</div>
+    st.markdown(
+        f"""
+        <div class="card">
 
-        <div class="error-title">
-            Infelizmente você não passou
-        </div>
+            <div style="font-size:58px;">
+                ❌
+            </div>
 
-        <div class="subtitle">
-            {st.session_state.motivo}
+            <div class="error-title">
+                Infelizmente você não passou
+            </div>
+
+            <div class="subtitle">
+                {st.session_state.motivo}
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
@@ -374,25 +438,32 @@ elif st.session_state.etapa == "reprovado":
         resetar()
         st.rerun()
 
-# =========================
+# ==================================================
 # FORMULÁRIO
-# =========================
+# ==================================================
 elif st.session_state.etapa == "formulario":
 
-    st.markdown("""
-    <div class="card">
-        <div style="font-size:58px;">🎉</div>
+    st.markdown(
+        """
+        <div class="card">
 
-        <div class="success-title">
-            Aprovado na triagem!
-        </div>
+            <div style="font-size:58px;">
+                🎉
+            </div>
 
-        <div class="subtitle">
-            Você desbloqueou o formulário oficial
-            de candidatura sentimental.
+            <div class="success-title">
+                Aprovado na triagem!
+            </div>
+
+            <div class="subtitle">
+                Você desbloqueou o formulário oficial
+                de candidatura sentimental.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
 
@@ -416,46 +487,59 @@ elif st.session_state.etapa == "formulario":
 
         st.rerun()
 
-# =========================
+# ==================================================
 # RANKING
-# =========================
+# ==================================================
 elif st.session_state.etapa == "ranking":
 
-    st.markdown(f"""
-    <div class="card">
-        <div style="font-size:58px;">🏆</div>
+    st.markdown(
+        f"""
+        <div class="card">
 
-        <div class="success-title">
-            Candidatura enviada!
-        </div>
+            <div style="font-size:58px;">
+                🏆
+            </div>
 
-        <div class="subtitle">
-            Score emocional de
-            <b>{st.session_state.score}</b>
-            pontos detectado.
+            <div class="success-title">
+                Candidatura enviada!
+            </div>
+
+            <div class="subtitle">
+                Score emocional de
+                <b>{st.session_state.score}</b>
+                pontos detectado.
+            </div>
+
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
 
     st.write("")
+
     st.subheader("🏆 Ranking dos Pretendentes")
 
     ranking = buscar_ranking()
 
     for i, pessoa in enumerate(ranking, start=1):
 
-        st.markdown(f"""
-        <div class="mini-card">
-            <h3>
-                {i}º lugar — {pessoa['nome']}
-            </h3>
+        st.markdown(
+            f"""
+            <div class="mini-card">
 
-            <p>
-                Score: <b>{pessoa['score']}</b><br>
-                Instagram: @{pessoa['instagram']}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+                <h3>
+                    {i}º lugar — {pessoa['nome']}
+                </h3>
+
+                <p>
+                    Score: <b>{pessoa['score']}</b><br>
+                    Instagram: @{pessoa['instagram']}
+                </p>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
     st.write("")
 
