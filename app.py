@@ -2,18 +2,28 @@ import streamlit as st
 import time
 import random
 from datetime import datetime
+from textwrap import dedent
 
 import gspread
 from google.oauth2.service_account import Credentials
 
 # ==================================================
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIG
 # ==================================================
 st.set_page_config(
     page_title="Projeto Desencalha",
     page_icon="💘",
     layout="centered"
 )
+
+# ==================================================
+# FUNÇÃO HTML
+# ==================================================
+def html(code):
+    st.markdown(
+        dedent(code).strip(),
+        unsafe_allow_html=True
+    )
 
 # ==================================================
 # GOOGLE SHEETS
@@ -35,7 +45,7 @@ sheet = client.open("Projeto Desencalha - Ranking").sheet1
 # ==================================================
 # CSS
 # ==================================================
-st.markdown("""
+html("""
 <style>
 
 .main {
@@ -117,10 +127,10 @@ div.stButton > button {
 }
 
 </style>
-""", unsafe_allow_html=True)
+""")
 
 # ==================================================
-# SESSION STATE
+# SESSION
 # ==================================================
 if "etapa" not in st.session_state:
     st.session_state.etapa = "inicio"
@@ -145,26 +155,23 @@ def resetar():
 
 def loading(destino):
 
-    st.markdown(
-        """
-        <div class="card">
-            <div class="badge">
-                ANÁLISE EM ANDAMENTO
-            </div>
-
-            <div class="title">
-                Analisando candidato...
-            </div>
-
-            <div class="subtitle">
-                Consultando histórico emocional,
-                risco de sumiço e capacidade de
-                assumir relacionamento sério.
-            </div>
+    html("""
+    <div class="card">
+        <div class="badge">
+            ANÁLISE EM ANDAMENTO
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="title">
+            Analisando candidato...
+        </div>
+
+        <div class="subtitle">
+            Consultando histórico emocional,
+            risco de sumiço e capacidade de
+            assumir relacionamento sério.
+        </div>
+    </div>
+    """)
 
     progress = st.progress(0)
 
@@ -199,32 +206,29 @@ def buscar_ranking():
     return ranking[:10]
 
 # ==================================================
-# TELA INICIAL
+# INÍCIO
 # ==================================================
 if st.session_state.etapa == "inicio":
 
-    st.markdown(
-        """
-        <div class="card">
+    html("""
+    <div class="card">
 
-            <div class="badge">
-                PROCESSO SELETIVO AFETIVO 2026
-            </div>
-
-            <div class="title">
-                Projeto Desencalha
-            </div>
-
-            <div class="subtitle">
-                Bem-vindo ao processo oficial de triagem amorosa.<br>
-                Responda com sinceridade.<br>
-                Mentiras emocionais serão detectadas.
-            </div>
-
+        <div class="badge">
+            PROCESSO SELETIVO AFETIVO 2026
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="title">
+            Projeto Desencalha
+        </div>
+
+        <div class="subtitle">
+            Bem-vindo ao processo oficial de triagem amorosa.<br>
+            Responda com sinceridade.<br>
+            Mentiras emocionais serão detectadas.
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -239,26 +243,23 @@ elif st.session_state.etapa == "solteiro":
 
     st.progress(33)
 
-    st.markdown(
-        """
-        <div class="card">
+    html("""
+    <div class="card">
 
-            <div class="badge">
-                ETAPA 1 DE 3
-            </div>
-
-            <div class="title">
-                Você é solteiro?
-            </div>
-
-            <div class="subtitle">
-                Pergunta eliminatória.
-            </div>
-
+        <div class="badge">
+            ETAPA 1 DE 3
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="title">
+            Você é solteiro?
+        </div>
+
+        <div class="subtitle">
+            Pergunta eliminatória.
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -271,6 +272,7 @@ elif st.session_state.etapa == "solteiro":
 
     with col2:
         if st.button("Não"):
+
             st.session_state.motivo = (
                 "Infelizmente candidatos comprometidos "
                 "não podem prosseguir."
@@ -286,27 +288,24 @@ elif st.session_state.etapa == "idade":
 
     st.progress(66)
 
-    st.markdown(
-        """
-        <div class="card">
+    html("""
+    <div class="card">
 
-            <div class="badge">
-                ETAPA 2 DE 3
-            </div>
-
-            <div class="title">
-                Você tem quantos anos?
-            </div>
-
-            <div class="subtitle">
-                Faixa aceita pela comissão:
-                entre 25 e 35 anos.
-            </div>
-
+        <div class="badge">
+            ETAPA 2 DE 3
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="title">
+            Você tem quantos anos?
+        </div>
+
+        <div class="subtitle">
+            Faixa aceita pela comissão:
+            entre 25 e 35 anos.
+        </div>
+
+    </div>
+    """)
 
     idade = st.number_input(
         "Digite sua idade",
@@ -351,28 +350,25 @@ elif st.session_state.etapa == "preparado":
 
     st.progress(100)
 
-    st.markdown(
-        """
-        <div class="card">
+    html("""
+    <div class="card">
 
-            <div class="badge">
-                ETAPA 3 DE 3
-            </div>
-
-            <div class="title">
-                Está 100% preparado?
-            </div>
-
-            <div class="subtitle">
-                Essa etapa mede coragem,
-                maturidade e ausência de trauma
-                não resolvido.
-            </div>
-
+        <div class="badge">
+            ETAPA 3 DE 3
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="title">
+            Está 100% preparado?
+        </div>
+
+        <div class="subtitle">
+            Essa etapa mede coragem,
+            maturidade e ausência de trauma
+            não resolvido.
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -395,14 +391,11 @@ elif st.session_state.etapa == "preparado":
             st.rerun()
 
 # ==================================================
-# LOADING REPROVADO
+# LOADING
 # ==================================================
 elif st.session_state.etapa == "loading_reprovado":
     loading("reprovado")
 
-# ==================================================
-# LOADING APROVADO
-# ==================================================
 elif st.session_state.etapa == "loading_aprovado":
     loading("formulario")
 
@@ -411,26 +404,23 @@ elif st.session_state.etapa == "loading_aprovado":
 # ==================================================
 elif st.session_state.etapa == "reprovado":
 
-    st.markdown(
-        f"""
-        <div class="card">
+    html(f"""
+    <div class="card">
 
-            <div style="font-size:58px;">
-                ❌
-            </div>
-
-            <div class="error-title">
-                Infelizmente você não passou
-            </div>
-
-            <div class="subtitle">
-                {st.session_state.motivo}
-            </div>
-
+        <div style="font-size:58px;">
+            ❌
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="error-title">
+            Infelizmente você não passou
+        </div>
+
+        <div class="subtitle">
+            {st.session_state.motivo}
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -443,27 +433,24 @@ elif st.session_state.etapa == "reprovado":
 # ==================================================
 elif st.session_state.etapa == "formulario":
 
-    st.markdown(
-        """
-        <div class="card">
+    html("""
+    <div class="card">
 
-            <div style="font-size:58px;">
-                🎉
-            </div>
-
-            <div class="success-title">
-                Aprovado na triagem!
-            </div>
-
-            <div class="subtitle">
-                Você desbloqueou o formulário oficial
-                de candidatura sentimental.
-            </div>
-
+        <div style="font-size:58px;">
+            🎉
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="success-title">
+            Aprovado na triagem!
+        </div>
+
+        <div class="subtitle">
+            Você desbloqueou o formulário oficial
+            de candidatura sentimental.
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -492,28 +479,25 @@ elif st.session_state.etapa == "formulario":
 # ==================================================
 elif st.session_state.etapa == "ranking":
 
-    st.markdown(
-        f"""
-        <div class="card">
+    html(f"""
+    <div class="card">
 
-            <div style="font-size:58px;">
-                🏆
-            </div>
-
-            <div class="success-title">
-                Candidatura enviada!
-            </div>
-
-            <div class="subtitle">
-                Score emocional de
-                <b>{st.session_state.score}</b>
-                pontos detectado.
-            </div>
-
+        <div style="font-size:58px;">
+            🏆
         </div>
-        """,
-        unsafe_allow_html=True
-    )
+
+        <div class="success-title">
+            Candidatura enviada!
+        </div>
+
+        <div class="subtitle">
+            Score emocional de
+            <b>{st.session_state.score}</b>
+            pontos detectado.
+        </div>
+
+    </div>
+    """)
 
     st.write("")
 
@@ -523,23 +507,20 @@ elif st.session_state.etapa == "ranking":
 
     for i, pessoa in enumerate(ranking, start=1):
 
-        st.markdown(
-            f"""
-            <div class="mini-card">
+        html(f"""
+        <div class="mini-card">
 
-                <h3>
-                    {i}º lugar — {pessoa['nome']}
-                </h3>
+            <h3>
+                {i}º lugar — {pessoa['nome']}
+            </h3>
 
-                <p>
-                    Score: <b>{pessoa['score']}</b><br>
-                    Instagram: @{pessoa['instagram']}
-                </p>
+            <p>
+                Score: <b>{pessoa['score']}</b><br>
+                Instagram: @{pessoa['instagram']}
+            </p>
 
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        </div>
+        """)
 
     st.write("")
 
