@@ -1,32 +1,43 @@
 import streamlit as st
-import time
 import random
+import time
 from datetime import datetime
 
 import gspread
 from google.oauth2.service_account import Credentials
 
+
+# =========================
+# CONFIG
+# =========================
 st.set_page_config(
     page_title="Projeto Desencalha",
     page_icon="💘",
     layout="centered"
 )
 
+
 # =========================
 # GOOGLE SHEETS
 # =========================
-scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+@st.cache_resource
+def conectar_planilha():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
 
-creds = Credentials.from_service_account_info(
-    st.secrets["gcp_service_account"],
-    scopes=scope
-)
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
 
-client = gspread.authorize(creds)
-sheet = client.open("Projeto Desencalha - Ranking").sheet1
+    client = gspread.authorize(creds)
+    return client.open("Projeto Desencalha - Ranking").sheet1
+
+
+sheet = conectar_planilha()
+
 
 # =========================
 # CSS
@@ -35,68 +46,62 @@ st.markdown("""
 <style>
 .stApp {
     background: radial-gradient(circle at top, #3b0764, #111827 55%, #020617);
+    color: white;
 }
 
 .block-container {
-    max-width: 720px;
-    padding-top: 3rem;
+    max-width: 780px;
+    padding-top: 2rem;
 }
 
-.big-title {
-    font-size: 46px;
-    font-weight: 900;
+[data-testid="stMarkdownContainer"] {
     color: white;
-    text-align: center;
-    margin-bottom: 12px;
 }
 
-.subtitle {
-    font-size: 18px;
-    color: #cbd5e1;
-    text-align: center;
-    line-height: 1.6;
+.card {
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    margin-bottom: 18px;
 }
 
 .badge {
-    display: block;
+    display: inline-block;
     background: rgba(236,72,153,0.16);
     color: #f9a8d4;
     padding: 8px 14px;
     border-radius: 999px;
-    text-align: center;
-    width: fit-content;
-    margin: 0 auto 18px auto;
     font-size: 13px;
     font-weight: 800;
     border: 1px solid rgba(236,72,153,0.35);
+    margin-bottom: 14px;
 }
 
-.box {
-    background: rgba(15, 23, 42, 0.92);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 24px;
-    padding: 32px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
-    margin-bottom: 22px;
+.title {
+    font-size: 42px;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    font-size: 17px;
+    color: #cbd5e1;
+    line-height: 1.6;
 }
 
 .success-title {
     color: #86efac;
-    font-size: 36px;
-    text-align: center;
+    font-size: 34px;
     font-weight: 900;
 }
 
 .error-title {
     color: #fca5a5;
-    font-size: 36px;
-    text-align: center;
+    font-size: 34px;
     font-weight: 900;
-}
-
-.icon {
-    font-size: 58px;
-    text-align: center;
 }
 
 .mini-card {
@@ -112,66 +117,296 @@ st.markdown("""
     margin-bottom: 8px;
 }
 
+.center {
+    text-align: center;
+}
+
 div.stButton > button {
     width: 100%;
     border-radius: 14px;
-    padding: 0.7rem 1rem;
-    font-weight: 700;
+    padding: 0.75rem 1rem;
+    font-weight: 800;
     border: none;
 }
+
 </style>
 """, unsafe_allow_html=True)
+
+
+# =========================
+# PERGUNTAS DO TESTE
+# =========================
+PERGUNTAS = [
+    {
+        "pergunta": "O que fazer quando Vanessa ainda não comeu?",
+        "opcoes": ["Discutir", "Ignorar", "Oferecer comida", "Perguntar 'tá brava?'"],
+        "correta": "Oferecer comida",
+        "erro": "Candidato não sobreviveria ao modo Vanessa em jejum."
+    },
+    {
+        "pergunta": "O que NÃO pode falar sobre o Fluminense?",
+        "opcoes": ["Time gigante", "Melhor torcida", "Time pequeno", "Tricolor"],
+        "correta": "Time pequeno",
+        "erro": "Detectada tentativa de caos emocional tricolor."
+    },
+    {
+        "pergunta": "Qual ambiente Vanessa provavelmente escolheria?",
+        "opcoes": ["Roda de pagode", "Retiro espiritual", "Campeonato de xadrez", "Seminário sobre silêncio"],
+        "correta": "Roda de pagode",
+        "erro": "Compatibilidade social extremamente baixa."
+    },
+    {
+        "pergunta": "Se Vanessa disser: 'amor, comprei só uma coisinha', você:",
+        "opcoes": ["Apoia emocionalmente", "Pergunta o valor", "Entra em desespero", "Cancela o cartão"],
+        "correta": "Apoia emocionalmente",
+        "erro": "Candidato não suportaria o lifestyle financeiro da Vanessa."
+    },
+    {
+        "pergunta": "Melhor date possível:",
+        "opcoes": ["Pagode + comida", "Reunião corporativa", "Fila do Detran", "Palestra motivacional"],
+        "correta": "Pagode + comida",
+        "erro": "Candidato apresenta risco elevado de date sem graça."
+    },
+    {
+        "pergunta": "Qual habilidade é essencial?",
+        "opcoes": ["Saber ouvir", "Dirigir caminhão", "Jogar FIFA", "Falar latim"],
+        "correta": "Saber ouvir",
+        "erro": "Nível crítico de falta de maturidade emocional."
+    },
+    {
+        "pergunta": "Vanessa provavelmente escuta:",
+        "opcoes": ["Heavy metal", "Podcast financeiro", "Pagode", "Sons da natureza"],
+        "correta": "Pagode",
+        "erro": "Compatibilidade musical inexistente."
+    },
+    {
+        "pergunta": "O relacionamento dela com o banco é:",
+        "opcoes": ["Saudável", "Profissional", "Extremamente íntimo", "Inexistente"],
+        "correta": "Extremamente íntimo",
+        "erro": "Candidato subestimou a situação financeira."
+    },
+    {
+        "pergunta": "Experiência dela no sistema prisional significa:",
+        "opcoes": ["Alta resistência emocional", "Ela é policial", "Ela luta MMA", "Ela é perigosa"],
+        "correta": "Alta resistência emocional",
+        "erro": "Candidato claramente não entendeu o lore."
+    },
+    {
+        "pergunta": "Qual dessas frases ela provavelmente diria?",
+        "opcoes": ["Eu mereço", "Vou economizar", "Não vou sair hoje", "Não gosto de pagode"],
+        "correta": "Eu mereço",
+        "erro": "Erro grave de interpretação comportamental."
+    },
+    {
+        "pergunta": "Qual dessas atitudes é obrigatória?",
+        "opcoes": ["Responder mensagem", "Sumir por 3 dias", "Visualizar e ignorar", "Responder só com 'kkkk'"],
+        "correta": "Responder mensagem",
+        "erro": "Candidato identificado como possível causador de trauma."
+    },
+    {
+        "pergunta": "Vanessa é apaixonada por:",
+        "opcoes": ["Fluminense", "Vasco", "Silêncio", "Economia"],
+        "correta": "Fluminense",
+        "erro": "Risco altíssimo de discussão esportiva."
+    },
+    {
+        "pergunta": "O que NÃO fazer num date?",
+        "opcoes": ["Chegar atrasado", "Conversar", "Pagar comida", "Escutar ela"],
+        "correta": "Chegar atrasado",
+        "erro": "Pontualidade emocional inexistente."
+    },
+    {
+        "pergunta": "Qual o maior risco?",
+        "opcoes": ["Ela sair comprando", "Ela virar coach", "Ela gostar de sertanejo", "Ela odiar futebol"],
+        "correta": "Ela sair comprando",
+        "erro": "Candidato ignorou o setor financeiro."
+    },
+    {
+        "pergunta": "Como sobreviver ao estresse matinal?",
+        "opcoes": ["Oferecendo café e comida", "Perguntando o motivo", "Discutindo", "Ignorando"],
+        "correta": "Oferecendo café e comida",
+        "erro": "Candidato não possui instinto de sobrevivência."
+    },
+    {
+        "pergunta": "Qual dessas opções demonstra maturidade?",
+        "opcoes": ["Conversar", "Sumir", "Postar indireta", "Dar ghost"],
+        "correta": "Conversar",
+        "erro": "Sistema detectou comportamento adolescente."
+    },
+    {
+        "pergunta": "Qual dessas frases é perigosa?",
+        "opcoes": ["Fluminense é pequeno", "Vamos sair", "Você tá certa", "Trouxe comida"],
+        "correta": "Fluminense é pequeno",
+        "erro": "Candidato provocou crise institucional."
+    },
+    {
+        "pergunta": "Probabilidade de Vanessa comprar por impulso:",
+        "opcoes": ["98%", "2%", "0%", "10%"],
+        "correta": "98%",
+        "erro": "Candidato claramente não leu a bio."
+    },
+    {
+        "pergunta": "Qual dessas é uma green flag?",
+        "opcoes": ["Gostar de sair", "Sumir por dias", "Não responder", "Falar mal de pagode"],
+        "correta": "Gostar de sair",
+        "erro": "Compatibilidade social rejeitada."
+    },
+    {
+        "pergunta": "O que Vanessa provavelmente faria num domingo?",
+        "opcoes": ["Pagode ou futebol", "Seminário financeiro", "Yoga silenciosa", "Caça ao tesouro"],
+        "correta": "Pagode ou futebol",
+        "erro": "Candidato desconhece totalmente a personalidade dela."
+    },
+    {
+        "pergunta": "Qual dessas opções demonstra inteligência?",
+        "opcoes": ["Levar ela pra comer", "Falar mal do Flu", "Responder 2 dias depois", "Ignorar mensagem"],
+        "correta": "Levar ela pra comer",
+        "erro": "Candidato não entende princípios básicos da felicidade."
+    },
+    {
+        "pergunta": "Qual dessas opções reduz o risco de briga?",
+        "opcoes": ["Comida", "Discussão", "Ciúmes", "Sumiço"],
+        "correta": "Comida",
+        "erro": "Sistema detectou ausência de estratégia emocional."
+    },
+    {
+        "pergunta": "Qual dessas frases ela provavelmente odiaria?",
+        "opcoes": ["Pagode é ruim", "Você merece", "Vamos sair", "Trouxe lanche"],
+        "correta": "Pagode é ruim",
+        "erro": "Crime cultural identificado."
+    },
+    {
+        "pergunta": "Qual dessas opções demonstra preparo psicológico?",
+        "opcoes": ["Aceitar o caos", "Entrar em pânico", "Correr", "Desinstalar WhatsApp"],
+        "correta": "Aceitar o caos",
+        "erro": "Candidato reprovado no teste de resistência."
+    },
+    {
+        "pergunta": "Qual dessas atitudes é mais importante?",
+        "opcoes": ["Presença", "Ghosting", "Indireta", "Ignorar"],
+        "correta": "Presença",
+        "erro": "Candidato apresenta maturidade emocional negativa."
+    },
+    {
+        "pergunta": "O sistema detecta que Vanessa possui:",
+        "opcoes": ["Personalidade forte", "Paciência infinita", "Calma absoluta", "Educação financeira avançada"],
+        "correta": "Personalidade forte",
+        "erro": "Candidato claramente ignorou todas as evidências."
+    },
+    {
+        "pergunta": "Qual a maior mentira já contada pela Vanessa?",
+        "opcoes": ["Vou economizar", "Vou dormir cedo", "Só uma cervejinha", "Não vou sair hoje"],
+        "correta": "Vou economizar",
+        "erro": "Candidato não conhece o histórico financeiro da Vanessa."
+    },
+    {
+        "pergunta": "Qual a frase mais falada pela Vanessa?",
+        "opcoes": ["Bom dia", "Ai meu Deus", "Porra", "Tá tranquilo"],
+        "correta": "Porra",
+        "erro": "Candidato claramente nunca conviveu com a Vanessa por mais de 5 minutos."
+    },
+    {
+        "pergunta": "Vanessa faz aniversário em:",
+        "opcoes": ["04/04", "10/10", "01/01", "31/12"],
+        "correta": "04/04",
+        "erro": "Erro grave: data comemorativa ignorada."
+    },
+    {
+        "pergunta": "Qual área Vanessa estudou?",
+        "opcoes": ["Nutrição", "Engenharia", "Direito", "TI"],
+        "correta": "Nutrição",
+        "erro": "Candidato não sabe nem o básico do currículo dela."
+    },
+]
+
+
+PERGUNTAS_FLU = [
+    {
+        "texto": "Alguém disse: 'Fluminense é time pequeno'. O que você responde?",
+        "opcoes": ["Concordo", "Respeita o gigante", "Nem ligo", "Prefiro Vasco"],
+        "correta": "Respeita o gigante"
+    },
+    {
+        "texto": "Vanessa pergunta se você assistiria jogo do Flu com ela.",
+        "opcoes": ["Claro, com camisa tricolor", "Só se não tiver nada melhor", "Não gosto de futebol", "Vou dormir"],
+        "correta": "Claro, com camisa tricolor"
+    },
+    {
+        "texto": "Qual frase é mais segura perto dela?",
+        "opcoes": ["Flu é gigante", "Flu não tem torcida", "Futebol é chato", "Prefiro não opinar"],
+        "correta": "Flu é gigante"
+    },
+    {
+        "texto": "O Fluminense faz gol. O que você faz?",
+        "opcoes": ["Comemoro junto", "Fico mexendo no celular", "Pergunto se já acabou", "Falo que foi sorte"],
+        "correta": "Comemoro junto"
+    },
+]
+
 
 # =========================
 # SESSION
 # =========================
-if "etapa" not in st.session_state:
-    st.session_state.etapa = "inicio"
+def iniciar_estado():
+    defaults = {
+        "etapa": "inicio",
+        "motivo": "",
+        "idade": 0,
+        "nome": "",
+        "instagram": "",
+        "score": 0,
+        "respostas_erradas": [],
+        "quiz_perguntas": [],
+        "quiz_index": 0,
+        "quiz_acertos": 0,
+        "estresse": 70,
+        "pontos_flu": 0,
+        "pergunta_flu": 0,
+    }
 
-if "motivo" not in st.session_state:
-    st.session_state.motivo = ""
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
-if "idade" not in st.session_state:
-    st.session_state.idade = 0
 
-if "score" not in st.session_state:
-    st.session_state.score = 0
+iniciar_estado()
 
-if "nome" not in st.session_state:
-    st.session_state.nome = ""
 
 # =========================
 # FUNÇÕES
 # =========================
-def resetar():
+def card_html(conteudo):
+    st.markdown(f'<div class="card">{conteudo}</div>', unsafe_allow_html=True)
+
+
+def resetar_tudo():
     st.session_state.etapa = "inicio"
     st.session_state.motivo = ""
     st.session_state.idade = 0
-    st.session_state.score = 0
     st.session_state.nome = ""
+    st.session_state.instagram = ""
+    st.session_state.score = 0
+    st.session_state.respostas_erradas = []
+    st.session_state.quiz_perguntas = []
+    st.session_state.quiz_index = 0
+    st.session_state.quiz_acertos = 0
+    st.session_state.estresse = 70
+    st.session_state.pontos_flu = 0
+    st.session_state.pergunta_flu = 0
 
-def abrir_box():
-    st.markdown('<div class="box">', unsafe_allow_html=True)
-
-def fechar_box():
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def cabecalho(badge, titulo, subtitulo):
-    abrir_box()
-    st.markdown(f'<div class="badge">{badge}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="big-title">{titulo}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="subtitle">{subtitulo}</div>', unsafe_allow_html=True)
-    fechar_box()
 
 def loading(destino):
-    cabecalho(
-        "ANÁLISE EM ANDAMENTO",
-        "Analisando candidato...",
-        "Consultando histórico emocional, risco de sumiço e capacidade de assumir relacionamento sério."
-    )
+    card_html("""
+        <div class="center">
+            <div class="badge">ANÁLISE EM ANDAMENTO</div>
+            <div class="title">Analisando candidato...</div>
+            <div class="subtitle">
+                Consultando histórico emocional, risco de sumiço e capacidade de assumir relacionamento sério.
+            </div>
+        </div>
+    """)
 
     progress = st.progress(0)
-
     for i in range(100):
         time.sleep(0.01)
         progress.progress(i + 1)
@@ -179,15 +414,17 @@ def loading(destino):
     st.session_state.etapa = destino
     st.rerun()
 
-def salvar_candidato(nome, idade, instagram, score):
+
+def salvar_candidato(nome, idade, instagram, score, status):
     sheet.append_row([
         datetime.now().strftime("%d/%m/%Y %H:%M"),
         nome,
         idade,
         instagram,
         score,
-        "Aprovado"
+        status
     ])
+
 
 def buscar_ranking():
     dados = sheet.get_all_records()
@@ -195,39 +432,56 @@ def buscar_ranking():
     if not dados:
         return []
 
-    ranking = sorted(
+    return sorted(
         dados,
         key=lambda x: int(x.get("score", 0)),
         reverse=True
-    )
+    )[:10]
 
-    return ranking[:10]
+
+def iniciar_quiz():
+    st.session_state.quiz_perguntas = random.sample(PERGUNTAS, 10)
+    st.session_state.quiz_index = 0
+    st.session_state.quiz_acertos = 0
+    st.session_state.respostas_erradas = []
+    st.session_state.etapa = "quiz"
+    st.rerun()
+
 
 # =========================
-# INÍCIO
+# TELA INICIAL
 # =========================
 if st.session_state.etapa == "inicio":
-    cabecalho(
-        "PROCESSO SELETIVO AFETIVO 2026",
-        "Projeto Desencalha",
-        "Bem-vindo ao processo oficial de triagem amorosa.<br>Responda com sinceridade.<br>Mentiras emocionais serão detectadas."
-    )
+    card_html("""
+        <div class="center">
+            <div class="badge">PROCESSO SELETIVO AFETIVO 2026</div>
+            <div class="title">Projeto Desencalha</div>
+            <div class="subtitle">
+                Bem-vindo ao processo oficial de triagem amorosa.<br>
+                Responda com sinceridade.<br>
+                Mentiras emocionais serão detectadas.
+            </div>
+        </div>
+    """)
 
     if st.button("💘 Iniciar candidatura"):
         st.session_state.etapa = "solteiro"
         st.rerun()
 
+
 # =========================
-# PERGUNTA 1
+# TRIAGEM 1
 # =========================
 elif st.session_state.etapa == "solteiro":
     st.progress(33)
 
-    cabecalho(
-        "ETAPA 1 DE 3",
-        "Você é solteiro?",
-        "Pergunta eliminatória. Responda com responsabilidade."
-    )
+    card_html("""
+        <div class="center">
+            <div class="badge">ETAPA 1 DE 3</div>
+            <div class="title">Você é solteiro?</div>
+            <div class="subtitle">Pergunta eliminatória. Responda com responsabilidade.</div>
+        </div>
+    """)
 
     col1, col2 = st.columns(2)
 
@@ -242,55 +496,55 @@ elif st.session_state.etapa == "solteiro":
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
+
 # =========================
-# PERGUNTA 2
+# TRIAGEM 2
 # =========================
 elif st.session_state.etapa == "idade":
     st.progress(66)
 
-    cabecalho(
-        "ETAPA 2 DE 3",
-        "Você tem quantos anos?",
-        "Faixa aceita pela comissão: entre 25 e 35 anos."
-    )
+    card_html("""
+        <div class="center">
+            <div class="badge">ETAPA 2 DE 3</div>
+            <div class="title">Você tem quantos anos?</div>
+            <div class="subtitle">Faixa aceita pela comissão: entre 25 e 35 anos.</div>
+        </div>
+    """)
 
-    idade = st.number_input(
-        "Digite sua idade",
-        min_value=0,
-        max_value=120,
-        step=1
-    )
+    idade = st.number_input("Digite sua idade", min_value=0, max_value=120, step=1)
 
     if st.button("Próximo"):
         if idade == 0:
             st.warning("Digite sua idade para continuar.")
-
         elif idade < 25:
             st.session_state.motivo = "Infelizmente você não passou. Candidato ainda está em fase de desenvolvimento emocional."
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
-
         elif idade > 35:
             st.session_state.motivo = "Vixi... perdeu a chance. Volte no tempo e tente novamente."
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
-
         else:
             st.session_state.idade = idade
             st.session_state.etapa = "preparado"
             st.rerun()
 
+
 # =========================
-# PERGUNTA 3
+# TRIAGEM 3
 # =========================
 elif st.session_state.etapa == "preparado":
     st.progress(100)
 
-    cabecalho(
-        "ETAPA 3 DE 3",
-        "Está 100% preparado?",
-        "Essa etapa mede coragem, maturidade e ausência de trauma não resolvido."
-    )
+    card_html("""
+        <div class="center">
+            <div class="badge">ETAPA 3 DE 3</div>
+            <div class="title">Está 100% preparado?</div>
+            <div class="subtitle">
+                Essa etapa mede coragem, maturidade e ausência de trauma não resolvido.
+            </div>
+        </div>
+    """)
 
     col1, col2 = st.columns(2)
 
@@ -305,6 +559,7 @@ elif st.session_state.etapa == "preparado":
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
 
+
 # =========================
 # LOADING
 # =========================
@@ -312,70 +567,409 @@ elif st.session_state.etapa == "loading_reprovado":
     loading("reprovado")
 
 elif st.session_state.etapa == "loading_aprovado":
-    loading("formulario")
+    loading("home")
+
 
 # =========================
 # REPROVADO
 # =========================
 elif st.session_state.etapa == "reprovado":
-    abrir_box()
-    st.markdown('<div class="icon">❌</div>', unsafe_allow_html=True)
-    st.markdown('<div class="error-title">Infelizmente você não passou</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="subtitle">{st.session_state.motivo}</div>', unsafe_allow_html=True)
-    fechar_box()
+    card_html(f"""
+        <div class="center">
+            <div style="font-size:58px;">❌</div>
+            <div class="error-title">Infelizmente você não passou</div>
+            <div class="subtitle">{st.session_state.motivo}</div>
+        </div>
+    """)
 
     if st.button("Tentar novamente"):
-        resetar()
+        resetar_tudo()
         st.rerun()
+
+
+# =========================
+# HOME
+# =========================
+elif st.session_state.etapa == "home":
+    card_html("""
+        <div class="center">
+            <div class="badge">PERFIL DESBLOQUEADO</div>
+            <div class="title">Vanessa Souza</div>
+            <div class="subtitle">
+                Carioca, pagodeira, nutricionista e torcedora completamente apaixonada pelo Fluminense.
+            </div>
+        </div>
+    """)
+
+    st.markdown("""
+    <div class="mini-card">
+        <h3>💘 Sobre ela</h3>
+        <p>
+            📍 Carioca<br>
+            🎂 Aniversário: 04/04<br>
+            🎓 Nutricionista<br>
+            ⚽ Fluminense acima de tudo<br>
+            🎶 Pagodeira oficial<br>
+            🍻 Ama sair<br>
+            😡 Perigosa antes do café da manhã<br>
+            🚔 Já sobreviveu ao sistema prisional brasileiro<br>
+            🔥 Personalidade forte<br>
+            ⚠️ Alta resistência emocional
+        </p>
+    </div>
+
+    <div class="mini-card">
+        <h3>📊 Estatísticas Financeiras</h3>
+        <p>
+            💸 Educação financeira: inexistente<br>
+            🛒 Controle de gastos: em análise<br>
+            📦 Probabilidade de comprar por impulso: 98%<br>
+            💳 Frase mais usada: <b>“eu mereço”</b><br>
+            🏦 Relacionamento com o banco: extremamente íntimo<br>
+            📈 Planejamento financeiro: esperança e oração
+        </p>
+    </div>
+
+    <div class="mini-card">
+        <h3>✅ Green Flags</h3>
+        <p>
+            ✅ Gosta de sair<br>
+            ✅ Conversa bem<br>
+            ✅ Engraçada<br>
+            ✅ Parceira<br>
+            ✅ Pagode + futebol<br>
+            ✅ Personalidade forte
+        </p>
+    </div>
+
+    <div class="mini-card">
+        <h3>🚨 Red Flags</h3>
+        <p>
+            🚨 Fome<br>
+            🚨 Estresse matinal<br>
+            🚨 Defesa automática do Fluminense<br>
+            🚨 “Só vou dar uma olhadinha”<br>
+            🚨 Risco financeiro elevado
+        </p>
+    </div>
+
+    <div class="mini-card">
+        <h3>👼 Cupidos Oficiais</h3>
+        <p>
+            Bruno<br>
+            Amigas da Vanessa<br>
+            Setor de fofoca<br>
+            RH sentimental<br>
+            Comissão anti-encalhe
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.write("")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🍔 Alimentar Vanessa"):
+            st.session_state.estresse = 70
+            st.session_state.etapa = "game_comida"
+            st.rerun()
+
+    with col2:
+        if st.button("⚽ Defender o Fluminense"):
+            st.session_state.pontos_flu = 0
+            st.session_state.pergunta_flu = 0
+            st.session_state.etapa = "game_flu"
+            st.rerun()
+
+    if st.button("💘 Quero me candidatar"):
+        st.session_state.etapa = "formulario"
+        st.rerun()
+
+    if st.button("🏆 Ver ranking"):
+        st.session_state.etapa = "ranking"
+        st.rerun()
+
+
+# =========================
+# GAME COMIDA
+# =========================
+elif st.session_state.etapa == "game_comida":
+    card_html("""
+        <div class="center">
+            <div class="badge">MINI GAME</div>
+            <div class="title">🍔 Alimente Vanessa</div>
+            <div class="subtitle">
+                Vanessa acordou sem comer. Sua missão é reduzir o estresse antes que seja tarde demais.
+            </div>
+        </div>
+    """)
+
+    st.progress(st.session_state.estresse)
+    st.subheader(f"😡 Estresse atual: {st.session_state.estresse}%")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🍔 Dar lanche"):
+            st.session_state.estresse -= 25
+            st.rerun()
+
+        if st.button("☕ Dar café"):
+            st.session_state.estresse -= 15
+            st.rerun()
+
+    with col2:
+        if st.button("🍟 Pedir iFood"):
+            st.session_state.estresse -= 35
+            st.rerun()
+
+        if st.button("🥗 Oferecer salada"):
+            st.session_state.estresse -= 5
+            st.warning("A salada ajudou, mas ela esperava algo mais criminoso.")
+            st.rerun()
+
+    if st.button("💸 Ela viu promoção na Shopee"):
+        st.session_state.estresse += 20
+        st.rerun()
+
+    st.session_state.estresse = max(0, min(100, st.session_state.estresse))
+
+    if st.session_state.estresse <= 0:
+        st.success("✅ Parabéns! Você sobreviveu à Vanessa em jejum.")
+        if st.button("Voltar para Home"):
+            st.session_state.estresse = 70
+            st.session_state.etapa = "home"
+            st.rerun()
+
+    elif st.session_state.estresse >= 100:
+        st.error("💀 Você falhou. Vanessa entrou em modo destruição.")
+        if st.button("Tentar novamente"):
+            st.session_state.estresse = 70
+            st.rerun()
+
+    if st.button("⬅️ Voltar"):
+        st.session_state.estresse = 70
+        st.session_state.etapa = "home"
+        st.rerun()
+
+
+# =========================
+# GAME FLUMINENSE
+# =========================
+elif st.session_state.etapa == "game_flu":
+    card_html("""
+        <div class="center">
+            <div class="badge">MINI GAME</div>
+            <div class="title">⚽ Defesa do Fluminense</div>
+            <div class="subtitle">
+                Prove que você respeita a instituição Fluminense Football Club.
+            </div>
+        </div>
+    """)
+
+    pergunta = PERGUNTAS_FLU[st.session_state.pergunta_flu]
+
+    st.subheader(pergunta["texto"])
+
+    for opcao in pergunta["opcoes"]:
+        if st.button(opcao):
+            if opcao == pergunta["correta"]:
+                st.session_state.pontos_flu += 1
+                st.success("✅ Resposta aceita pela comissão tricolor.")
+            else:
+                st.error("❌ Resposta perigosa. Vanessa ouviu isso.")
+
+            st.session_state.pergunta_flu += 1
+
+            if st.session_state.pergunta_flu >= len(PERGUNTAS_FLU):
+                st.session_state.etapa = "resultado_flu"
+
+            st.rerun()
+
+    if st.button("⬅️ Voltar"):
+        st.session_state.pontos_flu = 0
+        st.session_state.pergunta_flu = 0
+        st.session_state.etapa = "home"
+        st.rerun()
+
+
+elif st.session_state.etapa == "resultado_flu":
+    card_html("""
+        <div class="center">
+            <div class="badge">RESULTADO</div>
+            <div class="title">🏁 Resultado Tricolor</div>
+        </div>
+    """)
+
+    total = len(PERGUNTAS_FLU)
+
+    if st.session_state.pontos_flu >= 3:
+        st.success(f"✅ Aprovado! Você fez {st.session_state.pontos_flu}/{total}. Compatibilidade futebolística detectada.")
+    else:
+        st.error(f"❌ Reprovado. Você fez {st.session_state.pontos_flu}/{total}. Relacionamento encerrado por motivos esportivos.")
+
+    if st.button("Voltar para Home"):
+        st.session_state.pontos_flu = 0
+        st.session_state.pergunta_flu = 0
+        st.session_state.etapa = "home"
+        st.rerun()
+
 
 # =========================
 # FORMULÁRIO
 # =========================
 elif st.session_state.etapa == "formulario":
-    abrir_box()
-    st.markdown('<div class="icon">🎉</div>', unsafe_allow_html=True)
-    st.markdown('<div class="success-title">Aprovado na triagem!</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="subtitle">Você desbloqueou o formulário oficial de candidatura sentimental.</div>',
-        unsafe_allow_html=True
-    )
-    fechar_box()
+    card_html("""
+        <div class="center">
+            <div class="badge">CANDIDATURA OFICIAL</div>
+            <div class="title">Formulário sentimental</div>
+            <div class="subtitle">
+                Antes do teste, informe seus dados para entrar no ranking.
+            </div>
+        </div>
+    """)
 
     nome = st.text_input("Seu nome")
     instagram = st.text_input("Instagram")
 
-    if st.button("Enviar candidatura"):
+    if st.button("Iniciar teste de compatibilidade"):
         if not nome.strip():
-            st.warning("Digite seu nome para entrar no ranking.")
+            st.warning("Digite seu nome para continuar.")
         else:
-            score = random.randint(70, 100)
-
-            salvar_candidato(
-                nome.strip(),
-                st.session_state.idade,
-                instagram.strip(),
-                score
-            )
-
-            st.session_state.score = score
             st.session_state.nome = nome.strip()
+            st.session_state.instagram = instagram.strip()
+            iniciar_quiz()
+
+    if st.button("⬅️ Voltar para Home"):
+        st.session_state.etapa = "home"
+        st.rerun()
+
+
+# =========================
+# QUIZ
+# =========================
+elif st.session_state.etapa == "quiz":
+    perguntas = st.session_state.quiz_perguntas
+    index = st.session_state.quiz_index
+    pergunta = perguntas[index]
+
+    st.progress((index + 1) / 10)
+
+    card_html(f"""
+        <div class="center">
+            <div class="badge">TESTE DE COMPATIBILIDADE</div>
+            <div class="title">Pergunta {index + 1}/10</div>
+            <div class="subtitle">{pergunta["pergunta"]}</div>
+        </div>
+    """)
+
+    opcoes_embaralhadas = pergunta["opcoes"].copy()
+    random.shuffle(opcoes_embaralhadas)
+
+    for opcao in opcoes_embaralhadas:
+        if st.button(opcao):
+            if opcao == pergunta["correta"]:
+                st.session_state.quiz_acertos += 1
+            else:
+                st.session_state.respostas_erradas.append({
+                    "pergunta": pergunta["pergunta"],
+                    "resposta": opcao,
+                    "correta": pergunta["correta"],
+                    "erro": pergunta["erro"]
+                })
+
+            st.session_state.quiz_index += 1
+
+            if st.session_state.quiz_index >= 10:
+                st.session_state.etapa = "resultado_quiz"
+
+            st.rerun()
+
+
+# =========================
+# RESULTADO QUIZ
+# =========================
+elif st.session_state.etapa == "resultado_quiz":
+    acertos = st.session_state.quiz_acertos
+    score = acertos * 10
+    aprovado = acertos >= 7
+
+    st.session_state.score = score
+
+    status = "Aprovado" if aprovado else "Reprovado"
+
+    salvar_candidato(
+        st.session_state.nome,
+        st.session_state.idade,
+        st.session_state.instagram,
+        score,
+        status
+    )
+
+    if aprovado:
+        card_html(f"""
+            <div class="center">
+                <div style="font-size:58px;">🎉</div>
+                <div class="success-title">Parabéns, candidato aprovado!</div>
+                <div class="subtitle">
+                    Você acertou <b>{acertos}/10</b>.<br>
+                    Compatibilidade detectada: <b>{score}%</b>.<br>
+                    O RH sentimental autoriza sua permanência no ranking.
+                </div>
+            </div>
+        """)
+    else:
+        card_html(f"""
+            <div class="center">
+                <div style="font-size:58px;">💀</div>
+                <div class="error-title">Reprovado no teste sentimental</div>
+                <div class="subtitle">
+                    Você acertou apenas <b>{acertos}/10</b>.<br>
+                    Compatibilidade detectada: <b>{score}%</b>.<br>
+                    A comissão recomenda treinamento emocional urgente.
+                </div>
+            </div>
+        """)
+
+        st.subheader("Relatório de vergonha")
+        for erro in st.session_state.respostas_erradas:
+            st.markdown(f"""
+            <div class="mini-card">
+                <h3>{erro["pergunta"]}</h3>
+                <p>
+                    Sua resposta: <b>{erro["resposta"]}</b><br>
+                    Resposta ideal: <b>{erro["correta"]}</b><br>
+                    🚨 {erro["erro"]}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("🏆 Ver ranking"):
             st.session_state.etapa = "ranking"
             st.rerun()
+
+    with col2:
+        if st.button("Voltar ao início"):
+            resetar_tudo()
+            st.rerun()
+
 
 # =========================
 # RANKING
 # =========================
 elif st.session_state.etapa == "ranking":
-    abrir_box()
-    st.markdown('<div class="icon">🏆</div>', unsafe_allow_html=True)
-    st.markdown('<div class="success-title">Candidatura enviada!</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="subtitle">Score emocional de <b>{st.session_state.score}</b> pontos detectado.</div>',
-        unsafe_allow_html=True
-    )
-    fechar_box()
-
-    st.subheader("🏆 Ranking dos Pretendentes")
+    card_html("""
+        <div class="center">
+            <div style="font-size:58px;">🏆</div>
+            <div class="title">Ranking dos Pretendentes</div>
+            <div class="subtitle">
+                Classificação oficial do processo seletivo afetivo.
+            </div>
+        </div>
+    """)
 
     ranking = buscar_ranking()
 
@@ -386,20 +980,19 @@ elif st.session_state.etapa == "ranking":
             nome = pessoa.get("nome", "Candidato misterioso")
             score = pessoa.get("score", 0)
             instagram = pessoa.get("instagram", "")
+            status = pessoa.get("status", "")
 
-            st.markdown(
-                f"""
-                <div class="mini-card">
-                    <h3>{i}º lugar — {nome}</h3>
-                    <p>
-                        Score: <b>{score}</b><br>
-                        Instagram: @{instagram}
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(f"""
+            <div class="mini-card">
+                <h3>{i}º lugar — {nome}</h3>
+                <p>
+                    Score: <b>{score}%</b><br>
+                    Instagram: @{instagram}<br>
+                    Status: <b>{status}</b>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    if st.button("Voltar ao início"):
-        resetar()
+    if st.button("⬅️ Voltar para Home"):
+        st.session_state.etapa = "home"
         st.rerun()
