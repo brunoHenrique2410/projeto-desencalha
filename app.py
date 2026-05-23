@@ -2,6 +2,7 @@ import streamlit as st
 import random
 import time
 from datetime import datetime
+from pathlib import Path
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -15,6 +16,8 @@ st.set_page_config(
     page_icon="💘",
     layout="centered"
 )
+
+ASSETS = Path("assets")
 
 
 # =========================
@@ -50,8 +53,9 @@ st.markdown("""
 }
 
 .block-container {
-    max-width: 780px;
+    max-width: 820px;
     padding-top: 2rem;
+    padding-bottom: 3rem;
 }
 
 [data-testid="stMarkdownContainer"] {
@@ -121,6 +125,11 @@ st.markdown("""
     text-align: center;
 }
 
+.small-muted {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
 div.stButton > button {
     width: 100%;
     border-radius: 14px;
@@ -129,6 +138,9 @@ div.stButton > button {
     border: none;
 }
 
+img {
+    border-radius: 18px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -341,6 +353,16 @@ PERGUNTAS_FLU = [
         "opcoes": ["Comemoro junto", "Fico mexendo no celular", "Pergunto se já acabou", "Falo que foi sorte"],
         "correta": "Comemoro junto"
     },
+    {
+        "texto": "Vanessa está vendo jogo decisivo do Flu. Você:",
+        "opcoes": ["Fica junto e respeita o momento", "Pede pra trocar de canal", "Fala que futebol é besteira", "Dorme no sofá"],
+        "correta": "Fica junto e respeita o momento"
+    },
+    {
+        "texto": "Alguém zoou o Fluminense no grupo. Você:",
+        "opcoes": ["Defende a instituição", "Ri junto", "Manda figurinha do rival", "Finge que não viu"],
+        "correta": "Defende a instituição"
+    },
 ]
 
 
@@ -360,8 +382,11 @@ def iniciar_estado():
         "quiz_index": 0,
         "quiz_acertos": 0,
         "estresse": 70,
+        "evento_comida": "",
         "pontos_flu": 0,
         "pergunta_flu": 0,
+        "perguntas_flu_sorteadas": [],
+        "resultado_salvo": False,
     }
 
     for key, value in defaults.items():
@@ -391,8 +416,11 @@ def resetar_tudo():
     st.session_state.quiz_index = 0
     st.session_state.quiz_acertos = 0
     st.session_state.estresse = 70
+    st.session_state.evento_comida = ""
     st.session_state.pontos_flu = 0
     st.session_state.pergunta_flu = 0
+    st.session_state.perguntas_flu_sorteadas = []
+    st.session_state.resultado_salvo = False
 
 
 def loading(destino):
@@ -444,8 +472,38 @@ def iniciar_quiz():
     st.session_state.quiz_index = 0
     st.session_state.quiz_acertos = 0
     st.session_state.respostas_erradas = []
+    st.session_state.resultado_salvo = False
     st.session_state.etapa = "quiz"
     st.rerun()
+
+
+def mostrar_fotos():
+    fotos = [
+        ASSETS / "vanessa1.jpg",
+        ASSETS / "vanessa2.jpg",
+        ASSETS / "vanessa3.jpg",
+    ]
+
+    existentes = [foto for foto in fotos if foto.exists()]
+
+    if not existentes:
+        st.info("📸 Coloque as fotos em: assets/vanessa1.jpg, assets/vanessa2.jpg e assets/vanessa3.jpg")
+        return
+
+    cols = st.columns(len(existentes))
+    for col, foto in zip(cols, existentes):
+        with col:
+            st.image(str(foto), use_container_width=True)
+
+
+def mensagem_chance(score):
+    if score >= 90:
+        return "💘 Vanessa provavelmente responderia rápido. Situação rara detectada."
+    if score >= 70:
+        return "🙂 Você tem potencial. Ainda precisa sobreviver ao pagode e ao Fluminense."
+    if score >= 40:
+        return "⚠️ Chance alta de virar só amigo. A comissão está preocupada."
+    return "🚫 Sistema recomenda encaminhamento imediato para amizade."
 
 
 # =========================
@@ -574,11 +632,21 @@ elif st.session_state.etapa == "loading_aprovado":
 # REPROVADO
 # =========================
 elif st.session_state.etapa == "reprovado":
+    mensagens_reprovacao = [
+        "A comissão identificou risco emocional elevado.",
+        "Vanessa pediu revisão imediata da candidatura.",
+        "Compatibilidade insuficiente para sobreviver ao pagode.",
+        "Você não resistiria a um domingo de Fluminense.",
+        "Sistema detectou ausência de preparo psicológico.",
+    ]
+
     card_html(f"""
         <div class="center">
             <div style="font-size:58px;">❌</div>
             <div class="error-title">Infelizmente você não passou</div>
             <div class="subtitle">{st.session_state.motivo}</div>
+            <br>
+            <div class="subtitle"><b>{random.choice(mensagens_reprovacao)}</b></div>
         </div>
     """)
 
@@ -600,6 +668,8 @@ elif st.session_state.etapa == "home":
             </div>
         </div>
     """)
+
+    mostrar_fotos()
 
     st.markdown("""
     <div class="mini-card">
@@ -671,6 +741,7 @@ elif st.session_state.etapa == "home":
     with col1:
         if st.button("🍔 Alimentar Vanessa"):
             st.session_state.estresse = 70
+            st.session_state.evento_comida = ""
             st.session_state.etapa = "game_comida"
             st.rerun()
 
@@ -678,6 +749,7 @@ elif st.session_state.etapa == "home":
         if st.button("⚽ Defender o Fluminense"):
             st.session_state.pontos_flu = 0
             st.session_state.pergunta_flu = 0
+            st.session_state.perguntas_flu_sorteadas = random.sample(PERGUNTAS_FLU, 4)
             st.session_state.etapa = "game_flu"
             st.rerun()
 
@@ -704,51 +776,59 @@ elif st.session_state.etapa == "game_comida":
         </div>
     """)
 
+    st.session_state.estresse = max(0, min(100, st.session_state.estresse))
+
     st.progress(st.session_state.estresse)
     st.subheader(f"😡 Estresse atual: {st.session_state.estresse}%")
+
+    if st.session_state.evento_comida:
+        st.info(st.session_state.evento_comida)
+
+    eventos = [
+        ("💸 Vanessa viu promoção na Shopee. Estresse +20.", 20),
+        ("⚽ Alguém falou mal do Fluminense. Estresse +25.", 25),
+        ("🎶 Começou um pagode bom. Estresse -15.", -15),
+        ("🍟 Chegou o iFood. Estresse -30.", -30),
+        ("💳 Nubank mandou notificação. Estresse +15.", 15),
+        ("☕ Café entregue com sucesso. Estresse -20.", -20),
+        ("🍔 Lanche criminoso detectado. Estresse -35.", -35),
+    ]
 
     col1, col2 = st.columns(2)
 
     with col1:
         if st.button("🍔 Dar lanche"):
-            st.session_state.estresse -= 25
+            st.session_state.estresse -= random.randint(20, 35)
+            st.session_state.evento_comida = "🍔 Lanche aplicado com sucesso."
             st.rerun()
 
         if st.button("☕ Dar café"):
-            st.session_state.estresse -= 15
+            st.session_state.estresse -= random.randint(10, 25)
+            st.session_state.evento_comida = "☕ Café reduziu o risco de guerra civil."
             st.rerun()
 
     with col2:
         if st.button("🍟 Pedir iFood"):
-            st.session_state.estresse -= 35
+            st.session_state.estresse -= random.randint(25, 40)
+            st.session_state.evento_comida = "🍟 iFood chegou. A paz foi temporariamente restaurada."
             st.rerun()
 
-        if st.button("🥗 Oferecer salada"):
-            st.session_state.estresse -= 5
-            st.warning("A salada ajudou, mas ela esperava algo mais criminoso.")
+        if st.button("🎲 Evento aleatório"):
+            texto, impacto = random.choice(eventos)
+            st.session_state.estresse += impacto
+            st.session_state.evento_comida = texto
             st.rerun()
-
-    if st.button("💸 Ela viu promoção na Shopee"):
-        st.session_state.estresse += 20
-        st.rerun()
 
     st.session_state.estresse = max(0, min(100, st.session_state.estresse))
 
     if st.session_state.estresse <= 0:
         st.success("✅ Parabéns! Você sobreviveu à Vanessa em jejum.")
-        if st.button("Voltar para Home"):
-            st.session_state.estresse = 70
-            st.session_state.etapa = "home"
-            st.rerun()
-
     elif st.session_state.estresse >= 100:
         st.error("💀 Você falhou. Vanessa entrou em modo destruição.")
-        if st.button("Tentar novamente"):
-            st.session_state.estresse = 70
-            st.rerun()
 
-    if st.button("⬅️ Voltar"):
+    if st.button("⬅️ Voltar para Home"):
         st.session_state.estresse = 70
+        st.session_state.evento_comida = ""
         st.session_state.etapa = "home"
         st.rerun()
 
@@ -762,26 +842,30 @@ elif st.session_state.etapa == "game_flu":
             <div class="badge">MINI GAME</div>
             <div class="title">⚽ Defesa do Fluminense</div>
             <div class="subtitle">
-                Prove que você respeita a instituição Fluminense Football Club.
+                As perguntas são sorteadas. Prove que você respeita a instituição Fluminense Football Club.
             </div>
         </div>
     """)
 
-    pergunta = PERGUNTAS_FLU[st.session_state.pergunta_flu]
+    if not st.session_state.perguntas_flu_sorteadas:
+        st.session_state.perguntas_flu_sorteadas = random.sample(PERGUNTAS_FLU, 4)
 
+    pergunta = st.session_state.perguntas_flu_sorteadas[st.session_state.pergunta_flu]
+    total_flu = len(st.session_state.perguntas_flu_sorteadas)
+
+    st.progress((st.session_state.pergunta_flu + 1) / total_flu)
     st.subheader(pergunta["texto"])
 
-    for opcao in pergunta["opcoes"]:
+    opcoes = pergunta["opcoes"].copy()
+    random.shuffle(opcoes)
+
+    for opcao in opcoes:
         if st.button(opcao):
             if opcao == pergunta["correta"]:
                 st.session_state.pontos_flu += 1
-                st.success("✅ Resposta aceita pela comissão tricolor.")
-            else:
-                st.error("❌ Resposta perigosa. Vanessa ouviu isso.")
-
             st.session_state.pergunta_flu += 1
 
-            if st.session_state.pergunta_flu >= len(PERGUNTAS_FLU):
+            if st.session_state.pergunta_flu >= total_flu:
                 st.session_state.etapa = "resultado_flu"
 
             st.rerun()
@@ -789,19 +873,23 @@ elif st.session_state.etapa == "game_flu":
     if st.button("⬅️ Voltar"):
         st.session_state.pontos_flu = 0
         st.session_state.pergunta_flu = 0
+        st.session_state.perguntas_flu_sorteadas = []
         st.session_state.etapa = "home"
         st.rerun()
 
 
+# =========================
+# RESULTADO FLUMINENSE
+# =========================
 elif st.session_state.etapa == "resultado_flu":
+    total = len(st.session_state.perguntas_flu_sorteadas)
+
     card_html("""
         <div class="center">
             <div class="badge">RESULTADO</div>
             <div class="title">🏁 Resultado Tricolor</div>
         </div>
     """)
-
-    total = len(PERGUNTAS_FLU)
 
     if st.session_state.pontos_flu >= 3:
         st.success(f"✅ Aprovado! Você fez {st.session_state.pontos_flu}/{total}. Compatibilidade futebolística detectada.")
@@ -811,6 +899,7 @@ elif st.session_state.etapa == "resultado_flu":
     if st.button("Voltar para Home"):
         st.session_state.pontos_flu = 0
         st.session_state.pergunta_flu = 0
+        st.session_state.perguntas_flu_sorteadas = []
         st.session_state.etapa = "home"
         st.rerun()
 
@@ -895,16 +984,17 @@ elif st.session_state.etapa == "resultado_quiz":
     aprovado = acertos >= 7
 
     st.session_state.score = score
-
     status = "Aprovado" if aprovado else "Reprovado"
 
-    salvar_candidato(
-        st.session_state.nome,
-        st.session_state.idade,
-        st.session_state.instagram,
-        score,
-        status
-    )
+    if not st.session_state.resultado_salvo:
+        salvar_candidato(
+            st.session_state.nome,
+            st.session_state.idade,
+            st.session_state.instagram,
+            score,
+            status
+        )
+        st.session_state.resultado_salvo = True
 
     if aprovado:
         card_html(f"""
@@ -914,7 +1004,7 @@ elif st.session_state.etapa == "resultado_quiz":
                 <div class="subtitle">
                     Você acertou <b>{acertos}/10</b>.<br>
                     Compatibilidade detectada: <b>{score}%</b>.<br>
-                    O RH sentimental autoriza sua permanência no ranking.
+                    {mensagem_chance(score)}
                 </div>
             </div>
         """)
@@ -926,7 +1016,7 @@ elif st.session_state.etapa == "resultado_quiz":
                 <div class="subtitle">
                     Você acertou apenas <b>{acertos}/10</b>.<br>
                     Compatibilidade detectada: <b>{score}%</b>.<br>
-                    A comissão recomenda treinamento emocional urgente.
+                    {mensagem_chance(score)}
                 </div>
             </div>
         """)
@@ -943,6 +1033,9 @@ elif st.session_state.etapa == "resultado_quiz":
                 </p>
             </div>
             """, unsafe_allow_html=True)
+
+    st.progress(score / 100)
+    st.metric("Compatibilidade", f"{score}%")
 
     col1, col2 = st.columns(2)
 
@@ -972,6 +1065,7 @@ elif st.session_state.etapa == "ranking":
     """)
 
     ranking = buscar_ranking()
+    medalhas = ["🥇", "🥈", "🥉"]
 
     if not ranking:
         st.info("Ainda não há candidatos no ranking.")
@@ -982,9 +1076,14 @@ elif st.session_state.etapa == "ranking":
             instagram = pessoa.get("instagram", "")
             status = pessoa.get("status", "")
 
+            if i <= 3:
+                titulo = f"{medalhas[i - 1]} {nome}"
+            else:
+                titulo = f"{i}º lugar — {nome}"
+
             st.markdown(f"""
             <div class="mini-card">
-                <h3>{i}º lugar — {nome}</h3>
+                <h3>{titulo}</h3>
                 <p>
                     Score: <b>{score}%</b><br>
                     Instagram: @{instagram}<br>
