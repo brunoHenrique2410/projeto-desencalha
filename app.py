@@ -565,7 +565,7 @@ elif st.session_state.etapa == "idade":
         <div class="center">
             <div class="badge">ETAPA 2 DE 3</div>
             <div class="title">Você tem quantos anos?</div>
-            <div class="subtitle">Faixa aceita pela comissão: entre 25 e 35 anos.</div>
+            <div class="subtitle">Faixa aceita pela comissão: +28 anos.</div>
         </div>
     """)
 
@@ -574,7 +574,7 @@ elif st.session_state.etapa == "idade":
     if st.button("Próximo"):
         if idade == 0:
             st.warning("Digite sua idade para continuar.")
-        elif idade < 25:
+        elif idade < 27:
             st.session_state.motivo = "Infelizmente você não passou. Candidato ainda está em fase de desenvolvimento emocional."
             st.session_state.etapa = "loading_reprovado"
             st.rerun()
